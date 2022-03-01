@@ -10,16 +10,25 @@
 </head>
 <body class="login">
 	<div class="content">
-		<h3 class="form_title">获取otp信息</h3>
+		<h3 class="form_title">用户登录</h3>
 		<div class="form-group">
 			<label class="control-label">手机号</label>
 			<div>
 				<input class="form-control" type="text" name="telphone" placeholder="手机号" id="telphone" oninput = "value=value.replace(/[^\d]/g,'')"/>
 			</div>
 		</div>
+		<div class="form-group">
+			<label class="control-label">密码</label>
+			<div>
+				<input class="form-control" type="password" name="password" placeholder="密码" id="password" />
+			</div>
+		</div>
 		<div class="form-actions">
-			<button class="btn blue" id="getotp" type="submit">
-				获取otp短信
+			<button class="btn blue" id="login" type="submit">
+				登录
+			</button>
+			<button class="btn green" id="register" type="submit">
+				注册
 			</button>
 		</div>
 	</div>
@@ -29,9 +38,15 @@
 
 <script type="text/javascript">
 	jQuery(document).ready(function(){
-		//绑定otp的click时间用于向后端发送获取验证码的请求
-		$("#getotp").on("click",function(){
+
+		$("#register").on("click",function(){
+
+			window.location.href="getotp.html";
+		});
+
+		$("#login").on("click",function(){
 			var telphone = $("#telphone").val();
+			var password = $("#password").val();
 			if (telphone == null || telphone == "") {
 				alert("手机号不能为空！");
 				return false;
@@ -40,25 +55,29 @@
 				alert("手机号格式不正确！");
 				return false;
 			}
+			if (password == null || password == "") {
+				alert("密码不能为空！");
+				return false;
+			}
 			$.ajax({
 				type:"POST",
 				contentType:"application/x-www-form-urlencoded",
-				url:"http://localhost:8090/user/getotp",
+				url:"http://localhost:8090/user/login",
 				data:{
-					"telphone":$("#telphone").val(),
+					"telphone":telphone,
+					"password":password
 				},
 				xhrFields:{withCredentials:true},
 				success:function(data){
 					if (data.status == "success") {
-						alert("otp已经发送到您的手机上，请注意查收！");
-						window.location.href="register.html";
+						alert("登录成功！");
 					}else{
-						alert("otp发送失败，原因为"+data.data.errMsg);
+						alert("登录失败，原因为"+data.data.errMsg);
 					}
 
 				},
 				error:function(data){
-					alert("otp发送失败，原因为"+data.responseText);
+					alert("登录失败，原因为"+data.responseText);
 
 				}
 			});
