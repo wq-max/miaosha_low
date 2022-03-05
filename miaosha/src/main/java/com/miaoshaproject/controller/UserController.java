@@ -35,6 +35,11 @@ public class UserController extends BaseController{
     @Autowired
     private HttpServletRequest httpServletRequest;
 
+    @RequestMapping("/index")
+    public String index(){
+        return "login";
+    }
+
     //用户登录接口
     @RequestMapping(value = "/login", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORMED})
     @ResponseBody

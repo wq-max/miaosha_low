@@ -7,7 +7,9 @@ import com.miaoshaproject.dataobject.ItemStockDO;
 import com.miaoshaproject.error.BusinessException;
 import com.miaoshaproject.error.EmBusinessError;
 import com.miaoshaproject.service.ItemService;
+import com.miaoshaproject.service.PromoService;
 import com.miaoshaproject.service.model.ItemModel;
+import com.miaoshaproject.service.model.PromoModel;
 import com.miaoshaproject.validator.ValidationResult;
 import com.miaoshaproject.validator.ValidatorImpl;
 import org.springframework.beans.BeanUtils;
@@ -30,6 +32,9 @@ public class ItemServiceImpl implements ItemService {
 
     @Autowired
     private ItemStockDOMapper itemStockDOMapper;
+
+    @Autowired
+    private PromoService promoService;
 
     private ItemDO convertItemFromItemModel(ItemModel itemModel){
         if (itemModel == null){
@@ -79,12 +84,11 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemModel> listItem() {
         List<ItemDO> itemDOList = itemDOMapper.listItem();
-        List<ItemModel> itemModelList = itemDOList.stream().map(itemDO -> {
+        return itemDOList.stream().map(itemDO -> {
             ItemStockDO itemStockDO = itemStockDOMapper.selectByItemId(itemDO.getId());
             ItemModel itemModel = convertModelFromDataObject(itemDO,itemStockDO);
             return itemModel;
         }).collect(Collectors.toList());
-        return itemModelList;
     }
 
     @Override
@@ -99,7 +103,32 @@ public class ItemServiceImpl implements ItemService {
         if (itemStockDO == null){
             return null;
         }
-        return this.convertModelFromDataObject(itemDO, itemStockDO);
+
+        //dadaObject->model
+        ItemModel itemModel = convertModelFromDataObject(itemDO, itemStockDO);
+
+        //获取商品的秒杀活动信息
+        PromoModel promoModel = promoService.getPromoByItemId(itemModel.getId());
+        if (promoModel != null ){
+            itemModel.setPromoModel(promoModel);
+        }
+
+        return itemModel;
+    }
+
+    @Override
+    @Transactional
+    public boolean decreaseStock(Integer itemId, Integer amount) throws BusinessException {
+        int affectedRow = itemStockDOMapper.decreaseStock(itemId,amount);
+        if (affectedRow > 0)
+            return true;
+        return false;
+    }
+
+    @Override
+    @Transactional
+    public void increaseSales(Integer itemId, Integer amount) throws BusinessException {
+        itemDOMapper.increaseSales(itemId,amount);
     }
 
     private ItemModel convertModelFromDataObject(ItemDO itemDO, ItemStockDO itemStockDO){
@@ -112,4 +141,6 @@ public class ItemServiceImpl implements ItemService {
         itemModel.setStock(itemStockDO.getStock());
         return itemModel;
     }
+
+
 }

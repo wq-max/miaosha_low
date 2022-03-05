@@ -1,10 +1,12 @@
 package com.miaoshaproject.controller;
 
+import com.alibaba.druid.sql.ast.expr.SQLCaseExpr;
 import com.miaoshaproject.controller.viewobject.ItemVO;
 import com.miaoshaproject.error.BusinessException;
 import com.miaoshaproject.response.CommonReturnType;
 import com.miaoshaproject.service.ItemService;
 import com.miaoshaproject.service.model.ItemModel;
+import org.joda.time.format.DateTimeFormat;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -21,6 +23,11 @@ public class ItemController extends BaseController{
 
     @Autowired
     private ItemService itemService;
+
+    @RequestMapping("/createindex")
+    public String index(){
+        return "createitem";
+    }
 
     //创建商品的controller
     @RequestMapping(value = "/create", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORMED})
@@ -44,6 +51,7 @@ public class ItemController extends BaseController{
 
         return CommonReturnType.create(itemVO);
     }
+
 
     //商品详情页浏览
     @RequestMapping(value = "/get", method = {RequestMethod.GET})
@@ -72,6 +80,16 @@ public class ItemController extends BaseController{
             return null;
         ItemVO itemVO = new ItemVO();
         BeanUtils.copyProperties(itemModel,itemVO);
+        if (itemModel.getPromoModel() != null){
+            //有正在进行或待开始的秒杀活动
+            itemVO.setPromoStatus(itemModel.getPromoModel().getStatus());
+            itemVO.setPromoId(itemModel.getPromoModel().getId());
+            itemVO.setStartDate(itemModel.getPromoModel().getStartDate().toString(DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss")));
+            itemVO.setEndDate(itemModel.getPromoModel().getEndDate().toString(DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss")));
+            itemVO.setPromoPrice(itemModel.getPromoModel().getPromoItemPrice());
+        } else {
+            itemVO.setPromoStatus(0);
+        }
         return itemVO;
     }
 

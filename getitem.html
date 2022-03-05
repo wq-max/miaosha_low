@@ -11,6 +11,12 @@
 <body class="login">
 	<div class="content">
 		<h3 class="form_title">商品详情</h3>
+		<div id="promoStartDateContainer" class="form-group">
+			<label style="color: blue" id="promoStatus" class="control-label">秒杀活动</label>
+			<div>
+				<label style="color: red" class="control-label" id="promoDate" />
+			</div>
+		</div>
 		<div class="form-group">
 			<label class="control-label">商品名</label>
 			<div>
@@ -23,10 +29,16 @@
 				<label class="control-label" id="description" />
 			</div>
 		</div>
-		<div class="form-group">
+		<div id="normalPriceContainer" class="form-group">
 			<label class="control-label">价格</label>
 			<div>
 				<label class="control-label" id="price" />
+			</div>
+		</div>
+		<div id="promoPriceContainer" class="form-group">
+			<label style="color: red" class="control-label">秒杀价格</label>
+			<div>
+				<label style="color: red" class="control-label" id="promoPrice" />
 			</div>
 		</div>
 		<div class="form-group">
@@ -46,6 +58,11 @@
 			<div>
 				<label class="control-label" id="sales" />
 			</div>
+		</div>
+		<div class="form-actions">
+			<button class="btn blue" id="createorder" type="submit">
+				下单
+			</button>
 		</div>
 	</div>
 
@@ -67,6 +84,35 @@ function getParam(paramName) {
 var g_itemVO = {};
 
 	jQuery(document).ready(function(){
+		$("#createorder").on("click",function(){
+			$.ajax({
+				type:"POST",
+				contentType:"application/x-www-form-urlencoded",
+				url:"http://localhost:8090/order/createorder",
+				data:{
+					"itemId":g_itemVO.id,
+					"amount":1,
+					"promoId":g_itemVO.promoId
+				},
+				xhrFields:{withCredentials:true},
+				success:function(data){
+					if (data.status == "success") {
+						alert("下单成功！");
+						window.location.reload();
+					}else{
+						alert("下单失败！"+data.data.errMsg);
+						if (data.data.errCode == 20003) {
+							window.location.href="login.html";
+						}
+					}
+
+				},
+				error:function(data){
+					alert("下单失败！"+data.responseText);
+
+				}
+			});
+		});
 		//获取商品详情
 		$.ajax({
 				type:"GET",
@@ -79,6 +125,7 @@ var g_itemVO = {};
 					if (data.status == "success") {
 						g_itemVO = data.data;
 						reloadDom();
+						setInterval(reloadDom,1000);
 					}else{
 						alert("获取信息失败，原因为"+data.data.errMsg);
 					}
@@ -99,6 +146,46 @@ var g_itemVO = {};
 		$("#price").text(g_itemVO.price);
 		$("#imgUrl").attr("src",g_itemVO.imgUrl);
 		$("#sales").text(g_itemVO.sales);
+		if (g_itemVO.promoStatus == 1) {
+			//秒杀活动还未开始
+			var startTime = g_itemVO.startDate.replace(new RegExp("-","gm"),"/");
+			startTime = (new Date(startTime)).getTime();
+			var nowTime = Date.parse(new Date());
+			var delta = (startTime - nowTime)/1000;
+			if (delta <= 0) {
+				//活动开始
+				g_itemVO.promoStatus = 2;
+				reloadDom();
+			}
+			$("#promoDate").text("秒杀活动将于："+g_itemVO.startDate+" 开始 倒计时："+delta+"秒");
+			$("#promoPrice").text(g_itemVO.promoPrice);
+			$("#createorder").attr("disabled",true);
+		} else if (g_itemVO.promoStatus == 2) {
+			//秒杀活动正在进行
+			var endTime = g_itemVO.endDate.replace(new RegExp("-","gm"),"/");
+			endTime = (new Date(endTime)).getTime();
+			var nowTime = Date.parse(new Date());
+			var delta = (endTime - nowTime)/1000;
+			if (delta <= 0) {
+				//活动结束
+				g_itemVO.promoStatus = 3;
+				reloadDom();
+			}
+			$("#promoDate").text("秒杀正在进行中!"+"秒杀将于："+g_itemVO.endDate+" 结束！ 秒杀活动剩余："+delta+"秒！");
+			$("#promoPrice").text(g_itemVO.promoPrice);
+			$("#createorder").attr("disabled",false);
+			$("#normalPriceContainer").hide();
+		} else if (g_itemVO.promoStatus == 3) {
+			//没有秒杀活动或者已结束
+			$("#promoDate").text("秒杀活动已结束!");
+			$("#promoPriceContainer").hide();
+			$("#createorder").attr("disabled",false);
+		} else{
+			$("#promoStartDateContainer").hide();
+			$("#promoPriceContainer").hide();
+			
+
+		}
 	}
 </script>
 
